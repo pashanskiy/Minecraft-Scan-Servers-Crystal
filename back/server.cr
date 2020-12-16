@@ -4,43 +4,6 @@ require "./check_servers"
 require "uuid"
 
 class Server
-  struct Client2
-    getter output : Channel(Check_servers::Results)
-    getter data_array : Array(Check_servers::Results)
-    getter ip_list : Array(String)
-    getter size_of_ips : Int32
-
-    def initialize(@output, @data_array, @ip_list, @size_of_ips)
-      @output = output
-      @data_array = data_array
-      @ip_list = ip_list
-      @size_of_ips = size_of_ips
-    end
-
-    def initialize
-      @output = Channel(Check_servers::Results).new
-      @data_array = Array(Check_servers::Results).new
-      @ip_list = ["asd", "wqe", "qwe"]
-      @size_of_ips = Int32.new(0)
-    end
-
-    def set_output(output : Channel(Check_servers::Results))
-      @output = output
-    end
-
-    def append_data_array(data_array)
-      @data_array << data_array
-    end
-
-    def set_ip_list(ip_list : Array(String))
-      @ip_list = ["123", "3455", "234324"]
-    end
-
-    def set_size_of_ips(size_of_ips : Int32)
-      @size_of_ips = size_of_ips
-    end
-  end
-
   class Client
     property output
     property data_array
