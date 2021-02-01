@@ -14,7 +14,7 @@
 
 Back-End: Crystal.
 
-Front_end: React, TypeScript, WebPack, CSS.
+Front_end: React, TypeScript, WebPack.
 
 Точкой входа является файл "./back/server.cr"
 
@@ -22,8 +22,8 @@ Front_end: React, TypeScript, WebPack, CSS.
 
 ### Сканирование
 
-<img src="gif/1.gif" width="70%">
+<img src="gif/1.gif" width="100%">
 
 ### Результаты сканирования
 
-<img src="gif/2.gif" width="70%">
+<img src="gif/2.gif" width="100%">
