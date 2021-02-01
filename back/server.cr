@@ -4,6 +4,7 @@ require "./check_servers"
 require "uuid"
 
 class Server
+  # Структура для хранения данных пользователя в видк класса
   class Client
     property output
     property data_array
@@ -14,14 +15,16 @@ class Server
     end
   end
 
+  # Глобальная переменная массива пользователей
   @@clients = Hash(String?, Client).new
 
+  # Веб сервер
   server = HTTP::Server.new do |context|
     request = context.request
     uri = URI.parse(request.resource)
     path = uri.path
     params = uri.query_params
-    user_key = request.cookies["key"]?.try &.value
+    user_key = request.cookies["key"]?.try &.value # Генерация уникального UUID пользователя и передача в Cookies браузера
     case context.request.method
     when "GET"
       result = getWEB(path, params, context, user_key)
@@ -32,8 +35,8 @@ class Server
     context.response.puts(result)
   end
 
+  # Обработка GET запросов
   def self.getWEB(path, params, context, user_key)
-    # pp "get:  #{path}"
     case path
     when "/"
       context.response.cookies << HTTP::Cookie.new("key", UUID.random.to_s)
@@ -41,30 +44,26 @@ class Server
     when "/bundle.js"
       pp "User #{user_key} connected"
       File.read("../front/dist/bundle.js")
-    when "/styles.css" then File.read("../front/src/styles/style.css")
+    when "/styles.css" then File.read("../front/dist/styles.css")
     else                    ""
     end
   end
 
+  # Оброботка POST запросов
   def self.postWEB(request, user_key)
     return unless body = request.body
     data = JSON.parse(body)
     case data["mode"]
-    when "set_data"
-      pp "SET SET SET SET SET SET SET SET SET SET SET "
+    when "set_data" # Запись информации от клиента в виде IP-адресов
       @@clients[user_key] = Client.new(Channel(Check_servers::Results).new, Array(Check_servers::Results).new, Array(String).new, Int32.new(0))
-      # @@clients[user_key] = Client.new()
       @@clients[user_key].ip_list = array_any_to_array_string(data, "ips")
       @@clients[user_key].size_of_ips = @@clients[user_key].ip_list.size
       @@clients[user_key].output = Channel(Check_servers::Results).new(@@clients[user_key].size_of_ips)
-      pp @@clients[user_key]
-      pp "kek"
-      # pp @@clients[user_key]
       Check_servers.new.start(@@clients[user_key].output, @@clients[user_key].ip_list, "25565", data["rate"].as_s.to_i)
       spawn_listener(user_key)
       sleep 1.second
       get_data(user_key)
-    when "get_data"
+    when "get_data" # Запрос готовых результатов
       get_data(user_key)
     end
   end
@@ -90,6 +89,7 @@ class Server
             json.string @@clients[user_key].data_array[i].online_now
             json.string @@clients[user_key].data_array[i].online_max
             json.string @@clients[user_key].data_array[i].name
+            json.string @@clients[user_key].data_array[i].ping
           end
         end
       end
@@ -97,6 +97,7 @@ class Server
     json
   end
 
+  # Генарация ответа в виде JSON
   def self.get_data(user_key)
     string = JSON.build do |json|
       json.object do
@@ -104,28 +105,17 @@ class Server
           @@clients[user_key].output.close
           json.field "done", "1"
           json_data(json, user_key)
-          pp "User " + user_key.to_s + " done."
+          pp "User #{user_key} done. #{@@clients[user_key].size_of_ips} checked."
         else
           json.field "done", "0"
           json_data(json, user_key)
         end
       end
     end
-    # pp @@clients[user_key].data_array.size
-    # pp @@clients[user_key].size_of_ips
-    pp string
     string
   end
 
-  def data_to_json
-    list_of_data = [] of Results
-    @@size_of_ips.times do
-      data = @@output.receive
-      list_of_data << data
-    end
-    list_of_data
-  end
-
+  # Прослушивание канала многопоточности и прием актуальной информации о серверах
   def self.spawn_listener(user_key)
     spawn {
       while data = @@clients[user_key].output.receive?
@@ -135,9 +125,11 @@ class Server
   end
 end
 
+# Инициализация сервера
 address = server.bind_tcp 8080
 puts "Listening on http://#{address}"
 
+# Автоматическое открытие страницы в браузере при запуске программы
 {% if flag?(:linux) %}
   `xdg-open http://#{address}`
 {% elsif flag?(:darwin) %}
